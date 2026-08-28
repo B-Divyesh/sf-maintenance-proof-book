@@ -44,7 +44,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; }
 :focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
 
 .site-header { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 1440px; margin: auto; padding: 12px clamp(16px, 4vw, 56px); border-bottom: 1px solid rgba(185,206,219,.26); }
-.brand { display: inline-flex; align-items: center; gap: 11px; color: var(--chalk); font: 800 14px/1.05 var(--font-draft); letter-spacing: .08em; text-decoration: none; text-transform: uppercase; }
+.brand { min-height: 44px; display: inline-flex; align-items: center; gap: 11px; padding-block: 2px; color: var(--chalk); font: 800 14px/1.05 var(--font-draft); letter-spacing: .08em; text-decoration: none; text-transform: uppercase; }
 .brand img { border-radius: 9px; }
 .header-actions { display: flex; align-items: center; gap: 16px; }
 .network-badge { display: flex; align-items: center; gap: 8px; color: var(--chalk-muted); font-size: .82rem; }
@@ -149,7 +149,7 @@ body.offline .status-dot { background: var(--pencil); }
 .unlock-card li .icon { color: var(--success); }
 .unlock-card .button + .button { margin-top: 9px; }
 .fine-print { margin: 16px 0 0; color: var(--muted-ink); font-size: .78rem; }
-.fine-print a { text-decoration: underline; }
+.fine-print a, .site-footer a, .legal-shell a, .packet-evidence a { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; }
 .unlocked-note { grid-column: 1/-1; display: flex; align-items: center; gap: 24px; justify-content: center; text-align: left; }
 .unlocked-note > .icon { width: 64px; height: 64px; padding: 14px; color: #72dbae; border: 2px solid; border-radius: 50%; }
 .unlocked-note h2 { margin-bottom: 8px; }
@@ -217,7 +217,7 @@ dialog { color: var(--ink); }
 
 .toast-region { position: fixed; z-index: 2000; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(560px, calc(100% - 24px)); pointer-events: none; }
 .toast { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; color: var(--chalk); background: var(--blueprint-deep); border: 1px solid var(--chalk-muted); box-shadow: 5px 5px 0 rgba(0,0,0,.35); pointer-events: auto; }
-.toast button { min-height: 38px; color: var(--focus); background: transparent; border: 0; font-weight: 800; text-decoration: underline; cursor: pointer; }
+.toast button { min-height: 44px; color: var(--focus); background: transparent; border: 0; font-weight: 800; text-decoration: underline; cursor: pointer; }
 
 .legal-shell { width: min(850px, calc(100% - 32px)); margin: 64px auto 90px; padding: clamp(28px,6vw,70px); }
 .paper-sheet { color: var(--ink); background: var(--paper); border-top: 6px solid var(--pencil); box-shadow: 12px 12px 0 var(--blueprint-deep); }

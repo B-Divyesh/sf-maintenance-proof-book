@@ -32,13 +32,15 @@ Vite prints the local development URL. IndexedDB and service workers are tied to
 
 ```sh
 npm test
+npm run lint
 npm run build
 npm run test:e2e
+npm run test:live
 ```
 
 `npm run build` is the deployment build command. It type-checks, writes the static product to `./dist`, and injects the exact hashed asset set into the versioned service worker so lazy PDF code is also available offline. `dist/index.html`, `dist/privacy/index.html`, and `dist/terms/index.html` are direct static entry points.
 
-Playwright is pinned to 1.58.2. The end-to-end suite covers Chromium desktop and a 390 px mobile viewport, IndexedDB persistence, an attachment, PDF download, legal pages, axe serious/critical checks, and an explicit offline reload.
+Playwright is pinned to 1.58.2. The end-to-end suite covers Chromium desktop and a 390 px mobile viewport, IndexedDB persistence, an attachment, PDF download, legal pages, axe serious/critical checks, an explicit offline reload, and the 44 × 44 px visible-link target contract. `test:live` is a release check for the live factory catalog, hosted checkout redirect, and license-verification contract.
 
 ## Paid unlock
 
@@ -48,11 +50,11 @@ The interface uses only the Sociobot billing contract for `maintenance-proof-boo
 - verify: `https://api.sociobot.in/api/v1/products/maintenance-proof-book/verify?license=…`
 - local token key: `sb_license:maintenance-proof-book`
 
-No payment provider or product ID is embedded. The factory should register the product at the displayed $24 one-time price before release. PDF/JSON export, accessibility, stored records, and safety behavior are never gated.
+No payment provider or product ID is embedded. The product is registered in the Sociobot factory catalog at the displayed $24 one-time price. PDF/JSON export, accessibility, stored records, and safety behavior are never gated.
 
 ## Deploy
 
-Deploy the contents of `dist/` as a static site. Configure immutable caching for hashed files under `dist/assets/`; serve `sw.js`, HTML, and `manifest.webmanifest` with revalidation. DNS and billing configuration are intentionally outside this repository.
+Deploy the contents of `dist/` as a static site. `public/staticwebapp.config.json` is copied into `dist/` and declares immutable caching for hashed files, revalidation for `sw.js` and the manifest, the manifest MIME type, CSP, anti-framing, and Permissions Policy. DNS is managed by the factory deployer.
 
 The product-specific design system and generated-asset provenance are in [`.factory/design.md`](.factory/design.md). The final verification record is in [`.factory/handoff.md`](.factory/handoff.md).
 

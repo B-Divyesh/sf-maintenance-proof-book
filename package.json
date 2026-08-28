@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/inject-sw.mjs",
+    "lint": "tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:live": "node scripts/verify-live.mjs"
   },
   "dependencies": {
     "jspdf": "^4.2.1"
@@ -16,6 +18,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "1.58.2",
+    "@types/node": "^22.20.1",
     "playwright-core": "^1.58.2",
     "typescript": "5.9.2",
     "vite": "^7.3.6",

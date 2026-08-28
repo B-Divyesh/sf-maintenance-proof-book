@@ -49,3 +49,14 @@ test('privacy and terms routes have semantic pages', async ({ page }) => {
   await page.goto('/terms');
   await expect(page.getByRole('heading', { level: 1, name: 'Plain-language terms.' })).toBeVisible();
 });
+
+test('visible links meet the 44px touch-target contract on desktop and 390px mobile', async ({ page }) => {
+  await page.goto('/');
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await expect.poll(async () => page.locator('a:visible').evaluateAll((links) => links.map((link) => {
+      const rect = link.getBoundingClientRect();
+      return { label: (link.textContent || link.getAttribute('aria-label') || '').trim(), width: rect.width, height: rect.height };
+    }).filter((link) => link.width < 44 || link.height < 44))).toEqual([]);
+  }
+});
