@@ -195,7 +195,7 @@ function recordCard(record: RepairRecord): string {
     <div class="card-date"><span>${new Date(`${record.completedDate}T12:00:00`).getFullYear()}</span><strong>${new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(`${record.completedDate}T12:00:00`))}</strong></div>
     <div class="card-body"><div class="card-top"><div><p class="record-ref">Record ${escapeHtml(record.id.slice(0, 8))} · ${escapeHtml(record.area || 'Area not set')}</p><h3>${escapeHtml(record.title)}</h3></div><span class="due-badge due-${state}">${icon('calendar')} ${escapeHtml(status)}</span></div>
     <dl class="record-facts"><div><dt>Contractor</dt><dd>${escapeHtml(record.contractor || 'Not recorded')}</dd></div><div><dt>Part / source</dt><dd>${escapeHtml(record.part || record.vendor || 'Not recorded')}</dd></div><div><dt>Next action</dt><dd>${escapeHtml(record.nextAction)}</dd></div></dl>
-    <div class="card-foot"><span class="evidence-count">${icon('paperclip')} ${record.attachments.length} evidence file${record.attachments.length === 1 ? '' : 's'}</span><div><button class="button button-small button-quiet" type="button" data-action="edit-record" data-id="${record.id}">${icon('edit')} Edit</button><button class="button button-small button-paper" type="button" data-action="view-record" data-id="${record.id}">Open packet →</button></div></div></div>
+    <div class="card-foot"><span class="evidence-count">${icon('paperclip')} ${record.attachments.length} evidence file${record.attachments.length === 1 ? '' : 's'}</span><div><button class="button button-small button-quiet" type="button" data-action="edit-record" data-id="${escapeHtml(record.id)}">${icon('edit')} Edit</button><button class="button button-small button-paper" type="button" data-action="view-record" data-id="${escapeHtml(record.id)}">Open packet →</button></div></div></div>
   </article>`;
 }
 
@@ -276,7 +276,7 @@ function openView(record: RepairRecord): void {
     ${record.notes ? `<div class="packet-notes"><h3>Work notes</h3><p>${escapeHtml(record.notes).replaceAll('\n', '<br>')}</p></div>` : ''}
     <section class="packet-section" aria-labelledby="packet-evidence-title"><div class="packet-section-head"><h3 id="packet-evidence-title">Evidence index</h3><span>${record.attachments.length} file${record.attachments.length === 1 ? '' : 's'}</span></div>${evidence ? `<ul class="packet-evidence-list">${evidence}</ul>` : '<p>No evidence attachments were added to this repair.</p>'}</section>
     <p class="provenance-note">File names, types, sizes and added dates are preserved as entered. This packet is a homeowner record, not a legal certification.</p>
-    <div class="dialog-actions split-actions"><button class="button button-danger" type="button" data-action="delete-record" data-id="${record.id}">${icon('trash')} Delete repair</button><button class="button button-primary" type="button" data-action="edit-record" data-id="${record.id}">${icon('edit')} Edit packet</button></div>`;
+    <div class="dialog-actions split-actions"><button class="button button-danger" type="button" data-action="delete-record" data-id="${escapeHtml(record.id)}">${icon('trash')} Delete repair</button><button class="button button-primary" type="button" data-action="edit-record" data-id="${escapeHtml(record.id)}">${icon('edit')} Edit packet</button></div>`;
   getDialog('view-dialog').showModal();
 }
 
@@ -442,6 +442,8 @@ async function restoreLicense(form: HTMLFormElement): Promise<void> {
   error.textContent = '';
   if (!token) { error.textContent = 'Paste the license token from your receipt.'; return; }
   localStorage.setItem(licenseKey, token);
+  localStorage.removeItem(verdictKey);
+  unlocked = false;
   const valid = await verifyLicense(token, true);
   if (valid) { getDialog('license-dialog').close(); showToast('License restored. Unlimited records are ready.'); }
   else error.textContent = navigator.onLine ? 'That license could not be verified. Check the token and try again.' : 'You are offline. Reconnect once to restore a license on this device.';
