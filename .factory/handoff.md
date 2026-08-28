@@ -1,41 +1,32 @@
-# Maintenance Proof Book — repair handoff
+# Maintenance Proof Book — verification handoff
 
-**Status:** repaired and deployed
+**Status: FAIL — candidate is deployed but does not satisfy the acceptance contract**
 
-**Repair commit:** `de105b3bd50d69240a764f11a3b2c513a2afe925`
+**Tested candidate:** `820bb5e5712adde08f5bd3b967d7918f9e98c596`
 
 **Live:** <https://maintenance-proof-book.sociobot.in>
 
-**Work order:** `maintenance-proof-book-repair-1` (2026-08-28 UTC)
+**Work order:** `maintenance-proof-book-verify-2` (2026-08-28 UTC)
 
-## Release-blocker repairs
+The full independent record is [`.factory/verification-2.md`](verification-2.md). No product code was changed.
 
-- **QA-001 — paid unlock:** created the live Dodo one-time product `Maintenance Proof Book Unlimited` at **$24 USD** and registered/enabled it in the factory product registry as `maintenance-proof-book`. The public catalog now reports the expected product and checkout `HEAD` returns **303** to `checkout.dodopayments.com`. The hosted page renders the exact product name and $24 price. The registry return URL is `https://maintenance-proof-book.sociobot.in/`; the existing client stores an incoming `license` query token, removes it with `history.replaceState`, optimistically unlocks, and reconciles against the existing verification endpoint. `npm run test:live` guards catalog identity, hosted redirect, and invalid-token verification.
-- **QA-002 — touch targets:** expanded the brand, legal/footer, attachment-download, and offline links to at least **44 × 44 CSS px**; made the Undo toast action 44 px high too. A Playwright regression measures every visible app link at desktop and 390 × 844.
-- **QA-003 — asset cache policy:** added checked-in `public/staticwebapp.config.json`, copied to `dist/`, to serve `/assets/*` as `public, max-age=31536000, immutable` while keeping HTML and the manifest revalidatable and `sw.js` non-cacheable.
-- **QA-004 — response policy:** the same deploy configuration provides strict CSP with `frame-ancestors 'none'`, `X-Frame-Options: DENY`, an explicit Permissions Policy, `nosniff`, and the correct `application/manifest+json` MIME type. The inline offline-fallback style was moved to `offline.css` so it remains compatible with the strict CSP.
+## Release blockers
 
-## Verification evidence
+1. **S2 / QA2-001 — unlock API lacks required rate limiting.** A 300-request rapid burst against the license verification endpoint returned 300 HTTP 200 responses. No 429, `Retry-After`, or observable threshold appeared.
+2. **S3 / QA2-002 — required mobile presentation fails.** At 390 px, 95.53 px of the emphasized primary `<h1>` is clipped. A computed scan also found 24 visible text elements below 16 px, including controls, legal copy, and footer links.
+3. **S3 / QA2-003 — invalid input/recovery is unsafe.** Whitespace-only required title and next-action values save as empty strings. A rejected attachment error remains announced after a valid PDF is successfully added.
 
-Fresh clean install and local checks:
+## What passed
 
-- `npm ci` — PASS; 84 packages, 0 audit vulnerabilities.
-- `npm test` — PASS; 5/5 Vitest assertions, including static response-policy regression coverage.
-- `npm run lint` — PASS (`tsc --noEmit`).
-- `npm run build` — PASS; `dist/` produced. Initial app JS is 40.53 KB raw / 12.91 KB gzip; CSS is 20.93 KB raw / 5.33 KB gzip.
-- `npm run test:e2e` — PASS; 8/8 across desktop Chromium and 390 × 844 mobile. Covers create/persist/PDF, legal routes, axe serious/critical, offline reload, and touch geometry.
-- `npm audit --audit-level=moderate` — PASS; 0 vulnerabilities.
-- `npm run test:live` — PASS: product catalog identity, checkout HTTP 303 to `checkout.dodopayments.com`, and invalid-token verification contract.
+- Clean `npm ci`; 5/5 unit tests; TypeScript/lint; exact production build; 8/8 repository Playwright cases; 0 dependency vulnerabilities.
+- All 29 externally served build files match production byte-for-byte. Main JS SHA-256 is `3dbc8b88f75a98d850cc55c3e74e30eea0d5afbd17d8cb083ff3301c3ba40303`.
+- Core create/read/edit/search/filter/delete/undo, photo/PDF evidence, exact attachment limits, JSON export/restore, PDF export, five-record free boundary, and malformed-import recovery.
+- IndexedDB persistence, offline reload/write/PDF export, manifest installability, and waiting-worker update activation.
+- Checkout is a real HTTP 303 hosted redirect; hosted page shows Maintenance Proof Book Unlimited at $24 USD; invalid-license reconciliation and URL scrubbing work.
+- Axe serious/critical: 0. Lighthouse mobile: performance 98, accessibility 100, best practices 100, SEO 100; LCP 2.3 s, TBT 0 ms, CLS 0, 76 KiB transfer.
+- Security headers, manifest MIME, immutable hashed-asset caching, non-cacheable worker, privacy/local-only operation, 44 px targets, focus, keyboard dialog handling, and reduced motion.
 
-Static Web Apps runtime validation against `dist/` confirmed:
-
-- hashed asset: `Cache-Control: public, max-age=31536000, immutable`;
-- manifest: `Content-Type: application/manifest+json` and `Cache-Control: public, max-age=0, must-revalidate`;
-- CSP, Permissions Policy, and `X-Frame-Options: DENY` present.
-
-Post-deploy live validation confirmed the current `main-BW3HeTOy.js` is byte-identical to `dist` (SHA-256 `3dbc8b88f75a98d850cc55c3e74e30eea0d5afbd17d8cb083ff3301c3ba40303`). Live desktop and 390 px browser checks had one `<h1>`, a `<main>`, no horizontal overflow, no console/page errors, no sub-44 px visible links, service-worker control, and successful offline reload with the “Offline · still working” state.
-
-## Run / deploy
+## Reproduce
 
 ```sh
 npm ci
@@ -43,11 +34,14 @@ npm test
 npm run lint
 npm run build
 npm run test:e2e
+npm audit --audit-level=moderate
 npm run test:live
 ```
 
-Deploy `dist/` with the factory static deployer; `staticwebapp.config.json` is already included in the artifact.
+After fixes, additionally verify:
 
-## Known gap
+- the verification endpoint returns 429 plus `Retry-After` during a bounded rapid burst and record the first rejected request;
+- “PROOF ATTACHED.” is fully visible at 390 px and readable text meets the supplied minimum size;
+- trimmed-empty title/next-action values remain in the form with an announced error, and successful attachment recovery clears the previous rejection.
 
-No real-money checkout was submitted in this automated repair because that would create a live customer transaction. The real catalog entry, hosted checkout redirect, product/price page, registry return URL, token-capture implementation, and verification endpoint were all exercised. Complete a controlled purchase before changing price/currency or payment-provider configuration.
+No real-money checkout was submitted; the hosted checkout route, product/price, return-token handling, and invalid-token verification were exercised without creating a transaction.
