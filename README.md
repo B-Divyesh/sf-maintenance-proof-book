@@ -1,14 +1,61 @@
 # Maintenance Proof Book
 
-Live: https://maintenance-proof-book.sociobot.in — built by the Param Factory (`pwa-offline`).
+Maintenance Proof Book is a private, offline-first record for homeowners who need to connect a repair with the contractor, part, vendor, cost, receipt/photo evidence, and next service decision. It is deliberately smaller than a property-management system: one durable evidence packet per repair, arranged on a searchable property timeline.
 
-See `.factory/brief.json` for the researched problem this solves and `.factory/design.md` for the visual system.
+Live product: <https://maintenance-proof-book.sociobot.in>
 
-## Develop
+## What v1 includes
 
-```
-npm install
+- Local IndexedDB storage for property details, repair records, and attachment blobs
+- Photo and PDF evidence, with name/type/size/capture provenance
+- Search plus due-date filtering, overdue and upcoming status, edit/delete, and timed undo
+- On-device evidence PDF export with image previews and an attachment index
+- Full JSON backup/restore, including original attachment data
+- Installable PWA shell with offline create/edit/export behavior
+- A useful free book of five repairs; a $24 one-time Sociobot license unlocks unlimited records
+- `/privacy` and `/terms` pages, with no analytics, trackers, remote fonts, or runtime CDNs
+
+Data never leaves the device during ordinary use. License purchase and verification are the only network API calls. Browser storage is not a backup: the interface reports its allowance and explains how to keep periodic JSON copies.
+
+## Run locally
+
+Requires Node.js 20 or newer.
+
+```sh
+npm ci
 npm run dev
-npm test
-npm run build   # -> dist/
 ```
+
+Vite prints the local development URL. IndexedDB and service workers are tied to the browser origin, so development data is separate from production.
+
+## Test and build
+
+```sh
+npm test
+npm run build
+npm run test:e2e
+```
+
+`npm run build` is the deployment build command. It type-checks, writes the static product to `./dist`, and injects the exact hashed asset set into the versioned service worker so lazy PDF code is also available offline. `dist/index.html`, `dist/privacy/index.html`, and `dist/terms/index.html` are direct static entry points.
+
+Playwright is pinned to 1.58.2. The end-to-end suite covers Chromium desktop and a 390 px mobile viewport, IndexedDB persistence, an attachment, PDF download, legal pages, axe serious/critical checks, and an explicit offline reload.
+
+## Paid unlock
+
+The interface uses only the Sociobot billing contract for `maintenance-proof-book`:
+
+- checkout: `https://api.sociobot.in/api/v1/products/maintenance-proof-book/checkout`
+- verify: `https://api.sociobot.in/api/v1/products/maintenance-proof-book/verify?license=…`
+- local token key: `sb_license:maintenance-proof-book`
+
+No payment provider or product ID is embedded. The factory should register the product at the displayed $24 one-time price before release. PDF/JSON export, accessibility, stored records, and safety behavior are never gated.
+
+## Deploy
+
+Deploy the contents of `dist/` as a static site. Configure immutable caching for hashed files under `dist/assets/`; serve `sw.js`, HTML, and `manifest.webmanifest` with revalidation. DNS and billing configuration are intentionally outside this repository.
+
+The product-specific design system and generated-asset provenance are in [`.factory/design.md`](.factory/design.md). The final verification record is in [`.factory/handoff.md`](.factory/handoff.md).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
