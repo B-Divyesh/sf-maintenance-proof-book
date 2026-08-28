@@ -2,6 +2,7 @@
 
 **Work order:** `maintenance-proof-book-repair-2` (2026-08-28 UTC)
 **Base verified:** `820bb5e5712adde08f5bd3b967d7918f9e98c596`
+**Repair commit:** `dfe4a8e`
 **Live:** <https://maintenance-proof-book.sociobot.in>
 
 ## Result
@@ -85,6 +86,14 @@ Response/privacy/live identity:
 - No product data leaves IndexedDB during ordinary use. There are no trackers,
   remote fonts, or runtime CDNs. Checkout and license verification remain the
   documented Sociobot billing interactions.
+- Deployed with the factory static deployer as Azure deployment
+  `85d607f6-20b5-4892-bfd9-0a04ec57d012`. Post-deploy
+  `/opt/fleet/lib/verify-url.sh` passed with no console/page errors, and the
+  live `main-B_xGJvSq.js` SHA-256 matches the exact `dist/` asset.
+- A fresh live 390 × 844 browser check measured hero right = **390 px** and
+  emphasized-line right = **296.28 px**, with **390 px** document width,
+  **0** visible undersized readable elements, title focus after keyboard Enter,
+  and dialog close on Escape.
 
 ## Run and deploy
 
