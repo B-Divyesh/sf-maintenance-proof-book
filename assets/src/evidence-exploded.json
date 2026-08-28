@@ -1,0 +1,9 @@
+{
+  "tool": "/opt/fleet/lib/gen-image.sh",
+  "deployment": "factory-image",
+  "date": "2026-08-28",
+  "size": "1536x1024",
+  "quality": "high",
+  "prompt": "Use case: stylized-concept. Asset type: landing and empty-state hero for an offline homeowner repair evidence ledger. An exploded axonometric evidence packet for one ordinary home roof repair, connecting a small house roof section, a plain receipt slip, an instant photo of shingles, one simple metal fastener part, and a calendar tab with thin drafting leader lines. Deep navy architectural blueprint sheet backdrop. Precise cut-paper editorial illustration crossed with technical drafting, tactile cream paper, pale cyan pencil construction lines, restrained repair-orange pencil marks. Landscape composition, objects clustered toward the right and center with calm negative space. Soft overhead desk light, modest hard-edged paper shadows, quiet trustworthy mood. Palette: blueprint navy, chalk cream, pale cyan, repair orange, graphite. No people, no hands, no brands, no logos, no legible text, no watermark, no gradients, no glossy 3D, no futuristic devices, no legal seals or certificates, no UI mockup.",
+  "review": "Accepted: coherent roof evidence story, clean topology, no brands/people/watermark, no legible generated copy, palette matches blueprint system."
+}

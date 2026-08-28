@@ -1,0 +1,12 @@
+{
+  "slug": "maintenance-proof-book",
+  "title": "Maintenance Proof Book",
+  "territory": "utilities",
+  "user": "A homeowner who needs a durable record linking a repair, contractor, part, photo, receipt, and next service date.",
+  "current_workaround": "Keep a folder of receipts, photos in a camera roll, and future reminders in a calendar with no shared object history.",
+  "smallest_useful_product": "Offline property timeline with repair cards, receipt/photo attachment, part/vendor fields, next-due date, and a single PDF export.",
+  "success_measure": "At least 75% of a pilot household's new repair entries include one evidence attachment and a next-action field after 60 days.",
+  "artifact_class": "pwa-offline",
+  "monetization": "one-time",
+  "constraints": "Sensitive address/vendor data stays local; clear storage/export limits; PDF export must preserve attachment provenance without legal-certification claims."
+}

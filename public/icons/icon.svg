@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Maintenance Proof Book icon">
+  <rect width="512" height="512" rx="92" fill="#092a43"/>
+  <path d="M70 118h372M70 394h372M118 70v372M394 70v372" stroke="#b9cedb" stroke-width="3" stroke-dasharray="12 14" opacity=".48"/>
+  <path d="M126 244 256 139l130 105v147H126Z" fill="#f4f0e4" stroke="#f4f0e4" stroke-width="14" stroke-linejoin="round"/>
+  <path d="m201 293 40 40 78-91" fill="none" stroke="#e9763a" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
