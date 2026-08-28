@@ -1,32 +1,92 @@
-# Maintenance Proof Book — verification handoff
+# Maintenance Proof Book — repair handoff
 
-**Status: FAIL — candidate is deployed but does not satisfy the acceptance contract**
-
-**Tested candidate:** `820bb5e5712adde08f5bd3b967d7918f9e98c596`
-
+**Work order:** `maintenance-proof-book-repair-2` (2026-08-28 UTC)
+**Base verified:** `820bb5e5712adde08f5bd3b967d7918f9e98c596`
 **Live:** <https://maintenance-proof-book.sociobot.in>
 
-**Work order:** `maintenance-proof-book-verify-2` (2026-08-28 UTC)
+## Result
 
-The full independent record is [`.factory/verification-2.md`](verification-2.md). No product code was changed.
+The two application-owned release blockers from
+[`verification-2.md`](verification-2.md) are repaired with browser regression
+coverage:
 
-## Release blockers
+1. **QA2-002 — mobile clipping and undersized readable text:** the emphasized
+   hero line can now wrap instead of being hidden by the hero container. All
+   readable control, support, legal, evidence, footer, and drafting-label text
+   is at least 16 CSS px. The 390 px regression asserts the emphasized line is
+   within the hero, there is no horizontal overflow, and every visible element
+   with direct readable text is at least 16 px.
+2. **QA2-003 — whitespace and stale attachment alert:** required repair title
+   and next-action values are validated after trimming. A specific alert is
+   associated with the invalid field, focus moves there, and native validation
+   is updated. A new attachment selection first clears an old attachment
+   error; a successful attachment leaves no false rejection announced.
 
-1. **S2 / QA2-001 — unlock API lacks required rate limiting.** A 300-request rapid burst against the license verification endpoint returned 300 HTTP 200 responses. No 429, `Retry-After`, or observable threshold appeared.
-2. **S3 / QA2-002 — required mobile presentation fails.** At 390 px, 95.53 px of the emphasized primary `<h1>` is clipped. A computed scan also found 24 visible text elements below 16 px, including controls, legal copy, and footer links.
-3. **S3 / QA2-003 — invalid input/recovery is unsafe.** Whitespace-only required title and next-action values save as empty strings. A rejected attachment error remains announced after a valid PDF is successfully added.
+### External blocker that cannot be repaired in this artifact
 
-## What passed
+**QA2-001 remains a release blocker.** The failing resource is the
+factory-owned, cross-origin service
+`https://api.sociobot.in/api/v1/products/maintenance-proof-book/verify`, not a
+route implemented, built, or deployed by this static PWA (this repository has
+no `api/` directory and the static deployment contains only client assets).
+Directly probing the live endpoint in four immediate batches of 25 requests on
+2026-08-28 returned **100 × 200**, **0 × 429**, and no `Retry-After`. A
+client-side change cannot make a direct request to that service rate-limit.
 
-- Clean `npm ci`; 5/5 unit tests; TypeScript/lint; exact production build; 8/8 repository Playwright cases; 0 dependency vulnerabilities.
-- All 29 externally served build files match production byte-for-byte. Main JS SHA-256 is `3dbc8b88f75a98d850cc55c3e74e30eea0d5afbd17d8cb083ff3301c3ba40303`.
-- Core create/read/edit/search/filter/delete/undo, photo/PDF evidence, exact attachment limits, JSON export/restore, PDF export, five-record free boundary, and malformed-import recovery.
-- IndexedDB persistence, offline reload/write/PDF export, manifest installability, and waiting-worker update activation.
-- Checkout is a real HTTP 303 hosted redirect; hosted page shows Maintenance Proof Book Unlimited at $24 USD; invalid-license reconciliation and URL scrubbing work.
-- Axe serious/critical: 0. Lighthouse mobile: performance 98, accessibility 100, best practices 100, SEO 100; LCP 2.3 s, TBT 0 ms, CLS 0, 76 KiB transfer.
-- Security headers, manifest MIME, immutable hashed-asset caching, non-cacheable worker, privacy/local-only operation, 44 px targets, focus, keyboard dialog handling, and reduced motion.
+The owning billing API must enforce a finite per-client/token/IP threshold and
+return `429` with a valid `Retry-After`; then rerun the same bounded burst and
+record the first rejected response. The existing client already makes at most
+one background verification per cached 24-hour verdict and does not block the
+free local-first workflow on a verification failure.
 
-## Reproduce
+## Exact verification evidence
+
+Fresh dependency install and repository checks:
+
+- `npm ci` — PASS; 83 packages installed, 84 audited, 0 vulnerabilities.
+- `npm test` — PASS; 5/5 Vitest assertions.
+- `npm run lint` — PASS (`tsc --noEmit`).
+- `npm run build` — PASS; `dist/` produced. Initial application JS:
+  `main-B_xGJvSq.js`, 41.26 KB raw / 13.14 KB gzip. CSS: 20.87 KB raw /
+  5.27 KB gzip.
+- `npm run test:e2e` — PASS; 12/12 Playwright checks (six scenarios each in
+  desktop Chromium and the 390 × 844 mobile project). These include local
+  persistence and PDF evidence, legal routes, axe serious/critical checks,
+  offline controlled-shell reload, touch links, the new 390 px type/overflow
+  assertion, and the new whitespace/attachment-recovery path.
+- `npm audit --audit-level=moderate` — PASS; 0 vulnerabilities.
+- `npm run test:live` — PASS; catalog identity, hosted checkout HTTP 303 to
+  `checkout.dodopayments.com`, and the invalid-license contract.
+
+Browser, accessibility, and performance:
+
+- `/opt/fleet/lib/verify-url.sh http://127.0.0.1:4173/` — PASS: HTTP 200,
+  title, `lang="en"`, exactly one `<h1>`, `<main>`, image alt text, labelled
+  buttons, and no browser console/page errors.
+- Lighthouse 13 local mobile run — performance **100**, accessibility **100**,
+  best practices **100**, SEO **92**; LCP **1.7 s**, TBT **10 ms**, CLS **0**,
+  transfer **88 KiB**. (The 92 local SEO score is the expected lack of an HTTPS
+  transport audit on `127.0.0.1`; the deployed site uses HTTPS.)
+- The Playwright suite uses the pinned Playwright 1.58.2 browser and validates
+  both desktop and 390 px mobile. Its existing offline test explicitly calls
+  `context.setOffline(true)` after service-worker control and confirms the
+  shell reloads with the offline state.
+- The existing axe integration reports no serious or critical findings. The
+  repaired custom validation announces its text via the existing alert region,
+  gives the invalid control `aria-describedby`, and focuses it.
+
+Response/privacy/live identity:
+
+- Build configuration still supplies immutable hashed assets
+  (`public, max-age=31536000, immutable`), a non-cacheable worker
+  (`no-cache, no-store, must-revalidate`), manifest MIME
+  `application/manifest+json`, strict CSP with `frame-ancestors 'none'`, and
+  `X-Frame-Options: DENY`.
+- No product data leaves IndexedDB during ordinary use. There are no trackers,
+  remote fonts, or runtime CDNs. Checkout and license verification remain the
+  documented Sociobot billing interactions.
+
+## Run and deploy
 
 ```sh
 npm ci
@@ -38,10 +98,10 @@ npm audit --audit-level=moderate
 npm run test:live
 ```
 
-After fixes, additionally verify:
+The work order keeps the artifact class as **static PWA**. Deploy `dist/` with
+the factory static deployer; `dist/index.html` is the root entry point and
+`staticwebapp.config.json` is included.
 
-- the verification endpoint returns 429 plus `Retry-After` during a bounded rapid burst and record the first rejected request;
-- “PROOF ATTACHED.” is fully visible at 390 px and readable text meets the supplied minimum size;
-- trimmed-empty title/next-action values remain in the form with an announced error, and successful attachment recovery clears the previous rejection.
-
-No real-money checkout was submitted; the hosted checkout route, product/price, return-token handling, and invalid-token verification were exercised without creating a transaction.
+No real-money purchase was submitted. The real hosted checkout redirect,
+catalog identity, return-token implementation, and invalid-token
+reconciliation were exercised without creating a customer transaction.

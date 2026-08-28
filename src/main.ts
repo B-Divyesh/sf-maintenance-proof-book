@@ -128,7 +128,7 @@ function appMarkup(): string {
         <div class="dialog-head"><div><p class="kicker">Repair packet</p><h2 id="record-dialog-title">Record a repair</h2></div><button class="icon-button" type="button" data-action="close-record" aria-label="Close repair form">×</button></div>
         <input type="hidden" name="id">
         <div class="form-grid">
-          <label class="field field-wide"><span>What was repaired? <b aria-hidden="true">*</b></span><input name="title" required maxlength="100" autocomplete="off" placeholder="e.g. Replaced leaking kitchen tap"><small>Use a name you’ll recognize years from now.</small></label>
+          <label class="field field-wide"><span>What was repaired? <b aria-hidden="true">*</b></span><input name="title" required maxlength="100" autocomplete="off" aria-describedby="form-error" placeholder="e.g. Replaced leaking kitchen tap"><small>Use a name you’ll recognize years from now.</small></label>
           <label class="field"><span>Area of the home</span><input name="area" maxlength="60" autocomplete="off" placeholder="Kitchen"></label>
           <label class="field"><span>Work completed <b aria-hidden="true">*</b></span><input name="completedDate" type="date" required></label>
           <label class="field"><span>Contractor</span><input name="contractor" maxlength="100" autocomplete="organization" placeholder="Name or company"></label>
@@ -137,7 +137,7 @@ function appMarkup(): string {
           <label class="field"><span>Cost (USD)</span><input name="cost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></label>
           <label class="field field-wide"><span>Work notes</span><textarea name="notes" rows="4" maxlength="2000" placeholder="What failed, what changed, warranty details…"></textarea></label>
         </div>
-        <fieldset class="next-step-box"><legend>What happens next? <b aria-hidden="true">*</b></legend><div class="form-grid"><label class="field"><span>Next action</span><input name="nextAction" required maxlength="160" placeholder="Inspect seal or no follow-up needed"><small>Required so every repair ends with a decision.</small></label><label class="field"><span>Next due date</span><input name="nextDue" type="date"></label></div></fieldset>
+        <fieldset class="next-step-box"><legend>What happens next? <b aria-hidden="true">*</b></legend><div class="form-grid"><label class="field"><span>Next action</span><input name="nextAction" required maxlength="160" aria-describedby="form-error" placeholder="Inspect seal or no follow-up needed"><small>Required so every repair ends with a decision.</small></label><label class="field"><span>Next due date</span><input name="nextDue" type="date"></label></div></fieldset>
         <fieldset class="evidence-box"><legend>Evidence attachments</legend><p>Photos and PDF receipts, up to 10 MB each and 50 MB per repair. Files stay on this device.</p><label class="file-drop">${icon('paperclip')}<span><strong>Add photos or receipts</strong><small>Choose images or PDFs</small></span><input id="attachment-input" type="file" accept="image/*,application/pdf,.pdf" multiple></label><div id="staged-evidence" class="evidence-list"></div></fieldset>
         <div id="form-error" class="form-error" role="alert"></div>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-action="close-record">Cancel</button><button class="button button-primary" type="submit">${icon('check')} Save repair packet</button></div>
@@ -285,7 +285,24 @@ async function handleRecordSubmit(event: SubmitEvent): Promise<void> {
   const form = event.currentTarget as HTMLFormElement;
   const error = document.querySelector<HTMLDivElement>('#form-error')!;
   error.textContent = '';
+  const title = formElement<HTMLInputElement>(form, 'title');
+  const nextAction = formElement<HTMLInputElement>(form, 'nextAction');
+  for (const field of [title, nextAction]) { field.setCustomValidity(''); field.removeAttribute('aria-invalid'); }
   if (!form.checkValidity()) { form.reportValidity(); error.textContent = 'Complete the required repair name, date and next action.'; return; }
+  const trimmedRequired = [
+    [title, 'Enter a repair name that contains more than spaces.'],
+    [nextAction, 'Enter a next action that contains more than spaces.']
+  ] as const;
+  const invalid = trimmedRequired.find(([field]) => !field.value.trim());
+  if (invalid) {
+    const [field, message] = invalid;
+    field.setCustomValidity(message);
+    field.setAttribute('aria-invalid', 'true');
+    error.textContent = message;
+    field.focus();
+    field.reportValidity();
+    return;
+  }
   const id = formElement(form, 'id').value || crypto.randomUUID();
   const existing = records.find((record) => record.id === id);
   const now = new Date().toISOString();
@@ -318,13 +335,17 @@ async function handleRecordSubmit(event: SubmitEvent): Promise<void> {
 async function addAttachments(input: HTMLInputElement): Promise<void> {
   const error = document.querySelector<HTMLDivElement>('#form-error')!;
   const files = [...(input.files ?? [])];
+  let added = 0;
+  error.textContent = '';
   for (const file of files) {
     if (!(file.type.startsWith('image/') || file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) { error.textContent = `${file.name} is not an image or PDF.`; continue; }
     if (file.size > MAX_FILE_BYTES) { error.textContent = `${file.name} is over the 10 MB per-file limit.`; continue; }
     const currentBytes = stagedAttachments.reduce((sum, item) => sum + item.size, 0);
     if (currentBytes + file.size > MAX_RECORD_BYTES) { error.textContent = 'This repair would exceed the 50 MB attachment limit.'; break; }
     stagedAttachments.push({ id: crypto.randomUUID(), name: file.name, type: file.type || 'application/pdf', size: file.size, addedAt: new Date().toISOString(), blob: file });
+    added += 1;
   }
+  if (added) error.textContent = '';
   input.value = '';
   renderStagedEvidence();
 }
@@ -477,6 +498,10 @@ function bindEvents(): void {
     if (action === 'clear-filters') { searchTerm = ''; dueFilter = 'all'; (document.querySelector('#search') as HTMLInputElement).value = ''; (document.querySelector('#due-filter') as HTMLSelectElement).value = 'all'; renderTimeline(); }
   });
   document.querySelector('#record-form')?.addEventListener('submit', (event) => void handleRecordSubmit(event as SubmitEvent));
+  ['title', 'nextAction'].forEach((name) => formElement<HTMLInputElement>(document.querySelector<HTMLFormElement>('#record-form')!, name).addEventListener('input', (event) => {
+    const field = event.currentTarget as HTMLInputElement;
+    if (field.value.trim()) { field.setCustomValidity(''); field.removeAttribute('aria-invalid'); }
+  }));
   document.querySelector<HTMLInputElement>('#attachment-input')?.addEventListener('change', (event) => void addAttachments(event.currentTarget as HTMLInputElement));
   document.querySelector('#property-form')?.addEventListener('submit', async (event) => {
     event.preventDefault(); const form = event.currentTarget as HTMLFormElement;

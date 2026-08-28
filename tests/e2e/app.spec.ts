@@ -60,3 +60,45 @@ test('visible links meet the 44px touch-target contract on desktop and 390px mob
     }).filter((link) => link.width < 44 || link.height < 44))).toEqual([]);
   }
 });
+
+test('390px hero wraps its primary message and keeps all readable copy at 16px or larger', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const heroBounds = await page.locator('.hero h1').evaluate((heading) => {
+    const hero = heading.closest('.hero')!.getBoundingClientRect();
+    const emphasis = heading.querySelector('em')!.getBoundingClientRect();
+    return { heroRight: hero.right, emphasisRight: emphasis.right, scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth };
+  });
+  expect(heroBounds.emphasisRight).toBeLessThanOrEqual(heroBounds.heroRight);
+  expect(heroBounds.scrollWidth).toBeLessThanOrEqual(heroBounds.clientWidth);
+
+  const undersized = await page.locator('body *:visible').evaluateAll((elements) => elements.flatMap((element) => {
+    const hasDirectText = [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim());
+    return hasDirectText && Number.parseFloat(getComputedStyle(element).fontSize) < 16
+      ? [{ tag: element.tagName, text: (element.textContent || '').trim(), size: getComputedStyle(element).fontSize }]
+      : [];
+  }));
+  expect(undersized).toEqual([]);
+});
+
+test('whitespace-only repair fields are rejected and a successful attachment clears an old rejection', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Record a repair' }).first().click();
+  await page.getByLabel('What was repaired? *').fill('   ');
+  await page.getByLabel('Next action').fill('   ');
+  await page.getByRole('button', { name: 'Save repair packet' }).click();
+  await expect(page.getByRole('alert')).toHaveText('Enter a repair name that contains more than spaces.');
+  await expect(page.getByLabel('What was repaired? *')).toBeFocused();
+  await expect(page.locator('#record-dialog')).toBeVisible();
+
+  await page.getByLabel('Add photos or receipts').setInputFiles({ name: 'not-evidence.txt', mimeType: 'text/plain', buffer: Buffer.from('not a receipt') });
+  await expect(page.getByRole('alert')).toHaveText('not-evidence.txt is not an image or PDF.');
+  await page.getByLabel('Add photos or receipts').setInputFiles('tests/fixtures/receipt.pdf');
+  await expect(page.getByText('receipt.pdf', { exact: true })).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveText('');
+
+  await page.getByLabel('What was repaired? *').fill('Replace weather seal');
+  await page.getByLabel('Next action').fill('Inspect before winter');
+  await page.getByRole('button', { name: 'Save repair packet' }).click();
+  await expect(page.getByRole('heading', { name: 'Replace weather seal' })).toBeVisible();
+});
