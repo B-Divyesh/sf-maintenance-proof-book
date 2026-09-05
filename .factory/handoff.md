@@ -1,33 +1,31 @@
-# Maintenance Proof Book — verification 4 handoff
+# Keep proof of every home repair — review 2 handoff
 
 **Result:** PASS — zero findings and zero untested public claims
 
-**Implementation verified:** `c3611bb1f2a7ba90274c02f0f786f731f592f8de`
+**Implementation reviewed:** `c3611bb1f2a7ba90274c02f0f786f731f592f8de`
 
-**Documentation baseline:** `32b58547e314796429b73c7137872aafa942355c`
+**Documentation baseline:** `81d84e301465c9c3f93652ef619da2e7f892dfdf`
 
 **Live URL:** <https://maintenance-proof-book.sociobot.in>
 
-**Verified:** 2026-09-05 UTC
+**Reviewed:** 2026-09-05 UTC
 
 ## What was done
 
-Independent QA was repeated from a clean checkout without changing product code. Fresh desktop and phone contexts checked the first screen, full sample workflow, namespace isolation, reset/exit behavior, realistic evidence, responsive layout, keyboard/focus, reduced motion, routes, legal pages, offline reload, worker update, privacy requests, billing, and the designed 404.
+A fresh strict, report-only review repeated the homeowner workflow on live desktop and phone pages, then checked the isolated sample, reset and real-data boundary, normal/invalid/boundary/recovery paths, keyboard/focus, accessibility, privacy, offline/update, routes/legal pages/404, billing allowance, live bytes, and every prior finding.
 
-All earlier QA, verification, and strict-review findings were rechecked. Their current dispositions and evidence are in [`.factory/verification-4.md`](verification-4.md).
+No product code changed. The complete result and prior-finding dispositions are in [`.factory/review-2.md`](review-2.md).
 
 ## Verification results
 
-- Unit: 6/6 passed.
-- E2E: 24/24 passed across desktop and 390 × 844 Chromium.
-- Claims: 15/15 passed together and every declared claim command passed individually.
-- Lint, build to `dist/`, and moderate audit passed; audit found 0 vulnerabilities.
-- Live product, checkout/invalid-license contract, and production-browser verification passed.
-- The clean build matched all 38 live public files.
-- Lighthouse mobile: 100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO; FCP 1.01 s, LCP 1.31 s, TBT 77 ms, CLS 0.
-- Billing burst: 30 allowed and 50 rate-limited responses; every 429 included `Retry-After`.
+- Unit: 6/6; E2E: 24/24.
+- Claims: 15/15 combined and 15/15 individual declared commands.
+- Lint, build to `dist/`, live test, production browser test, and moderate audit passed; audit found 0 vulnerabilities.
+- All 38 publicly served clean-build files match live bytes.
+- Mobile Lighthouse: 100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO; FCP 0.9 s, LCP 1.4 s, TBT 20 ms, CLS 0.
+- Fresh billing burst: 30 HTTP 200 and 50 HTTP 429; every 429 included `Retry-After`.
 
-Run the local checks with:
+Run local checks with:
 
 ```sh
 npm ci
@@ -41,10 +39,10 @@ npm run test:live
 npm run test:production-browser
 ```
 
-Evidence is under `/work/.evidence/verification-4/`. The release-facing QA report is `/work/.evidence/qa-report.md`, and the machine result is `/work/.evidence/qa-result.json`.
+Evidence is under `/work/.evidence/review-2/`. The release-facing QA report is `/work/.evidence/qa-report.md`, and the machine result is `/work/.evidence/qa-result.json`.
 
 ## Applicability and known gap
 
-This product is a static local-first PWA, so backend tenant/SQLite/health/restart checks and installed CLI/library/desktop checks do not apply. Browser persistence, service-worker offline/update behavior, and the external product-specific billing API were tested.
+This static local-first PWA has no product backend, SQLite mount, health route, or installed CLI/library/desktop artifact. Browser persistence, worker offline/update behavior, and the external product-specific billing allowance were tested.
 
 No real-money purchase was submitted. The hosted checkout redirect, price, invalid-token result, recorded valid-license path, revocation behavior, and rate limiting passed without spending.
