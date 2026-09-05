@@ -17,10 +17,6 @@
       "rewrite": "/demo/index.html"
     },
     {
-      "route": "/demo/",
-      "rewrite": "/demo/index.html"
-    },
-    {
       "route": "/assets/*",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"
