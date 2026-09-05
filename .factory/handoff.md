@@ -1,39 +1,48 @@
-# Maintenance Proof Book — verification handoff
+# Maintenance Proof Book — review handoff
 
-**Work order:** maintenance-proof-book-verify-3
-**Verdict:** **PASS**
-**Candidate tested:** 8fc87ae21a6b217857d4e697e6f973e3f38d36d0
+**Work order:** `maintenance-proof-book-review-1`
+**Verdict:** **FAIL**
+**Finding count:** 5
+**Untested public claim count:** 14
+**Implementation reviewed:** `8fc87ae21a6b217857d4e697e6f973e3f38d36d0`
+**Documentation baseline:** `f8488e80a36f7d0900808cf95cd54f9ef7b484c9`
 **Live URL:** <https://maintenance-proof-book.sociobot.in>
-**Verified:** 2026-08-28 UTC
+**Reviewed:** 2026-09-05 UTC
 
 ## Result
 
-The candidate passes the researched local-first product contract. It provides a durable offline repair timeline linking repair, contractor, vendor/part, attachment, next action/date, and PDF proof export.
+The deployed core workflow and every earlier reported defect pass, but the strict review fails five current finding groups. The product lacks an isolated sample demo and claims registry; its property/backup invalid paths need repair; its 404 and discovery metadata are incomplete; and its first screen/site skeleton does not meet the attached plain-word structure.
 
-The earlier deployment-only billing blocker is resolved: the $24 production product is listed, checkout returns a hosted Dodo redirect, invalid license verification responds as expected, and the product verification endpoint rate-limits requests. No release defects were found.
+The complete evidence and remediation detail is in [review-1.md](review-1.md). No product code was modified.
 
-## Commands and results
+## Verification summary
 
-From a clean checkout: npm ci; npm test; npm run lint; npm run build; npm run test:e2e; npm audit --audit-level=moderate; npm run test:live.
+- `npm ci`, `npm test`, `npm run lint`, `npm run build`, `npm run test:e2e`, `npm audit --audit-level=moderate`, and `npm run test:live` passed.
+- Unit tests: 5/5. Playwright: 12/12. Audit: 0 vulnerabilities.
+- Fresh live desktop and 390 px phone profiles passed normal repair, persistence, attachment, search, PDF/JSON export, free-limit, delete/undo, keyboard, axe, offline reload, and reduced-motion checks.
+- Lighthouse 13: 100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO; LCP 1.4 s, CLS 0.
+- Billing checkout redirected to the correct hosted $24 product. A 100-request verification burst returned 30 × 200 and 70 × 429, every rejection with `Retry-After: 4`.
+- All 29 built public files matched live bytes, proving the deployed implementation is `8fc87ae` despite later report-only commits.
 
-All passed: 5/5 Vitest assertions, TypeScript check, production build, 12/12 Playwright desktop/mobile tests, audit with 0 vulnerabilities, and live billing smoke test. Initial app JS is 41.26 KB raw / 13.14 KB gzip; CSS is 20.87 KB raw / 5.27 KB gzip; hero WebP is 55.7 KB; there are no webfonts.
+## Current blockers
 
-Independent Chromium checks confirmed a complete zero-cost repair with contractor, vendor, part, next action/date, PDF receipt, and an XSS-shaped title renders as text, survives reload, and exports a valid PDF. Whitespace validation and invalid-file recovery work. Exact 10 MiB attachment accepts while 10 MiB + 1 byte rejects. Five free records save and the sixth is clearly blocked.
+1. Add the one-click populated demo, persistent demo label, reset/exit actions, and a separate storage namespace; document it in `.factory/demo.md`.
+2. Add `.factory/claims.json` and exactly one `@claim:<id>` test command for each of the 14 inventoried public claims.
+3. Reject whitespace-only property names and replace raw JSON parser text with a plain, actionable error.
+4. Add a designed HTTP 404 plus canonical/Open Graph/Twitter metadata, `robots.txt`, `sitemap.xml`, and the Demo route title.
+5. Bring the first screen, section order, header/footer, and copy audit into the plain-words and site-structure contract.
 
-New-profile ordinary use stored records in IndexedDB only, made no cross-origin request, and had no localStorage data, tracker, remote font, or CDN request. Desktop and 390 x 844 mobile had no overflow or visible target under 44 px. Keyboard reached the skip link, dialog title, and restored origin focus on Escape; reduced-motion transition was 1e-05s. Axe reported 0 serious/critical findings locally and live, with no console or page errors.
+## Re-run
 
-The live worker controlled the page and offline reload showed Offline · still working. A two-version local worker exercise installed a waiting update, displayed A fresh version is ready, activated it through Update now, and replaced old caches.
+```sh
+npm ci
+npm test
+npm run lint
+npm run build
+npm run test:e2e
+npm audit --audit-level=moderate
+npm run test:live
+/opt/fleet/lib/verify-url.sh https://maintenance-proof-book.sociobot.in/ /work/.evidence/verify-url
+```
 
-## Live deployment and policy
-
-All 29 web-served files in this exact dist build matched live bytes. staticwebapp.config.json is deployment configuration and correctly returns 404. HTTPS responses include HSTS, CSP, anti-framing policy, nosniff, strict referrer policy, Permissions-Policy, correct manifest MIME, immutable hashed assets, and non-cacheable service worker.
-
-A fresh 100-request invalid-license burst at 20-way concurrency received 31 x 200 and 69 x 429. Every 429 contained Retry-After from 0 to 4 seconds. A post-recovery sequential run first rejected request 4 because three calls remained in its quota window; clean-burst observed threshold is about 31 accepted calls per client/window.
-
-## Known limitation
-
-Lighthouse 13 was invoked with the Playwright Chromium path but its separately launched tab crashed in this container before writing a report. This is a test-environment limitation, not an observed product or browser-console failure; direct bundle budgets and browser checks passed.
-
-## Remaining work
-
-None for this candidate. Deploy dist; optionally regenerate a Lighthouse report where standalone Lighthouse Chromium is stable.
+Then run every command in `.factory/claims.json` from a fresh demo profile, inspect `/demo`, `/privacy`, `/terms`, and a missing route on desktop and 390 px mobile, and repeat the rate-limit probe.
