@@ -19,6 +19,7 @@ describe('proof book utility rules', () => {
 
   it('accepts only the versioned product backup envelope', () => {
     expect(validateBackup({ format: 'maintenance-proof-book', version: 1, property: { name: 'Home', address: '' }, records: [] })).toBe(true);
+    expect(validateBackup({ format: 'maintenance-proof-book', version: 1, property: { name: '   ', address: '' }, records: [] })).toBe(false);
     expect(validateBackup({ format: 'other', version: 1, property: {}, records: [] })).toBe(false);
   });
 

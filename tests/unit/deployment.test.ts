@@ -11,4 +11,10 @@ describe('static deployment response policy', () => {
     expect(config.globalHeaders['X-Frame-Options']).toBe('DENY');
     expect(config.globalHeaders['Permissions-Policy']).toContain('camera=()');
   });
+
+  it('routes the demo separately and renders the designed page for HTTP 404 responses', async () => {
+    const config = JSON.parse(await readFile(new URL('../../public/staticwebapp.config.json', import.meta.url), 'utf8'));
+    expect(config.routes.find((route: { route: string }) => route.route === '/demo')?.rewrite).toBe('/demo/index.html');
+    expect(config.responseOverrides['404'].rewrite).toBe('/404.html');
+  });
 });

@@ -1,8 +1,18 @@
 import type { Attachment, ProofBookBackup, PropertyProfile, RepairRecord } from './types';
 import { validateBackup } from './utils';
 
-const DB_NAME = 'maintenance-proof-book';
+const REAL_DB_NAME = 'maintenance-proof-book';
+const DEMO_DB_NAME = 'demo:maintenance-proof-book';
 const DB_VERSION = 1;
+let activeDbName = REAL_DB_NAME;
+
+export function configureDatabase(demo: boolean): void {
+  activeDbName = demo ? DEMO_DB_NAME : REAL_DB_NAME;
+}
+
+export function databaseName(): string {
+  return activeDbName;
+}
 
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -21,7 +31,7 @@ function txDone(tx: IDBTransaction): Promise<void> {
 
 export function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(activeDbName, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains('records')) db.createObjectStore('records', { keyPath: 'id' });
@@ -30,6 +40,16 @@ export function openDatabase(): Promise<IDBDatabase> {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error('Private storage is unavailable in this browser.'));
   });
+}
+
+export async function clearBook(): Promise<void> {
+  const db = await openDatabase();
+  try {
+    const tx = db.transaction(['records', 'settings'], 'readwrite');
+    tx.objectStore('records').clear();
+    tx.objectStore('settings').clear();
+    await txDone(tx);
+  } finally { db.close(); }
 }
 
 export async function getAllRecords(): Promise<RepairRecord[]> {

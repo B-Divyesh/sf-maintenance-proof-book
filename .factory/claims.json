@@ -1,0 +1,107 @@
+[
+  {
+    "id": "demo-isolation",
+    "claim": "The sample demo starts with three repairs, resets, and never changes the real repair book.",
+    "where": "landing sample action, demo banner, README",
+    "test": "npm run test:claims -- --grep @claim:demo-isolation",
+    "sandbox": "create one real repair, enter /demo, change and reset the sample, start for real, then confirm real data is unchanged and demo records were cleared"
+  },
+  {
+    "id": "offline-reload",
+    "claim": "Works offline after the first visit, including create, edit, and PDF export.",
+    "where": "landing facts, README",
+    "test": "npm run test:claims -- --grep @claim:offline-reload",
+    "sandbox": "fresh browser context at /demo; wait for service worker; go offline; reload, create, edit, and download a PDF"
+  },
+  {
+    "id": "pwa-install",
+    "claim": "Installs as a standalone PWA.",
+    "where": "README",
+    "test": "npm run test:claims -- --grep @claim:pwa-install",
+    "sandbox": "fresh /demo context; inspect the fetched manifest and active service worker"
+  },
+  {
+    "id": "local-indexeddb",
+    "claim": "Stores property, repair, and attachment data locally in IndexedDB.",
+    "where": "privacy page, README",
+    "test": "npm run test:claims -- --grep @claim:local-indexeddb",
+    "sandbox": "fresh /demo context; assert the demo database name, edit a record, reload, and observe persistence"
+  },
+  {
+    "id": "no-account",
+    "claim": "No account is required.",
+    "where": "landing facts",
+    "test": "npm run test:claims -- --grep @claim:no-account",
+    "sandbox": "fresh /demo context with no credentials; create a fourth repair through the UI"
+  },
+  {
+    "id": "no-tracking",
+    "claim": "Uses no analytics or tracking.",
+    "where": "landing facts, README",
+    "test": "npm run test:claims -- --grep @claim:no-tracking",
+    "sandbox": "record every request during a complete ordinary /demo flow and assert all stay on the product origin"
+  },
+  {
+    "id": "no-remote-assets",
+    "claim": "Uses no remote fonts or runtime CDN assets.",
+    "where": "README",
+    "test": "npm run test:claims -- --grep @claim:no-remote-assets",
+    "sandbox": "record script, stylesheet, and font requests on /demo; assert same-origin only and no loaded web fonts"
+  },
+  {
+    "id": "attachment-limits",
+    "claim": "Accepts photo or PDF evidence up to 10 MB per file and 50 MB per repair.",
+    "where": "repair form, README",
+    "test": "npm run test:claims -- --grep @claim:attachment-limits",
+    "sandbox": "fresh /demo repair form; assert exact 10 MB and exact 50 MB succeed, then assert both over-limit paths fail"
+  },
+  {
+    "id": "record-tools",
+    "claim": "Supports search, due filtering, edit, delete, and a timed undo.",
+    "where": "repair log, README",
+    "test": "npm run test:claims -- --grep @claim:record-tools",
+    "sandbox": "fresh /demo data; use every listed control and confirm the deleted record is restored"
+  },
+  {
+    "id": "pdf-export",
+    "claim": "Creates an on-device evidence PDF with image previews and an attachment index.",
+    "where": "data dialog, README",
+    "test": "npm run test:claims -- --grep @claim:pdf-export",
+    "sandbox": "fresh /demo data; observe the image and evidence index, download the PDF, and validate its bytes"
+  },
+  {
+    "id": "json-backup",
+    "claim": "Creates and restores a full JSON backup with original attachment data.",
+    "where": "data dialog, README",
+    "test": "npm run test:claims -- --grep @claim:json-backup",
+    "sandbox": "fresh /demo data; export, change, restore, and compare the restored attachment bytes"
+  },
+  {
+    "id": "free-five",
+    "claim": "The free book holds five repairs while PDF and JSON export remain free.",
+    "where": "landing facts, pricing, README",
+    "test": "npm run test:claims -- --grep @claim:free-five",
+    "sandbox": "fresh /demo data; reach five repairs, reject a sixth, then download both export formats"
+  },
+  {
+    "id": "paid-unlimited",
+    "claim": "A $24 one-time license enables unlimited repair records.",
+    "where": "pricing, terms, README",
+    "test": "npm run test:claims -- --grep @claim:paid-unlimited",
+    "sandbox": "start at /demo; enter a clean real book with a recorded valid verification response and save a sixth repair"
+  },
+  {
+    "id": "license-restore",
+    "claim": "A license can be restored on another device, and existing records remain readable after invalidation.",
+    "where": "pricing, terms, README",
+    "test": "npm run test:claims -- --grep @claim:license-restore",
+    "sandbox": "fresh browser context from /demo; restore with recorded valid response, then invalidate and read the existing record"
+  },
+  {
+    "id": "billing-privacy",
+    "claim": "Ordinary use sends no product data away; only checkout and license verification use the billing API, and the app receives no card data.",
+    "where": "privacy page, pricing, README",
+    "test": "npm run test:claims -- --grep @claim:billing-privacy",
+    "sandbox": "record a /demo flow, inspect the checkout URL, intercept one license request, and assert no card fields or request body"
+  }
+]

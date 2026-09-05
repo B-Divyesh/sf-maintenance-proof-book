@@ -51,6 +51,8 @@ Sheet/dialog transitions use 180–240ms opacity + translate/scale and originate
 ## Original asset plan and provenance
 
 - `public/assets/evidence-exploded.webp`: original generated hero illustration showing a roof repair evidence packet as an exploded, axonometric blueprint assembly—house section, receipt, camera print, replacement part, calendar marker. It explains the central product promise rather than serving as filler.
+- `public/assets/sample-roof-repair.webp`: original generated sample evidence image of a completed shingle repair. It appears only inside the isolated demo so a sample packet has realistic visual evidence.
+- `public/assets/social-preview.jpg`: a deterministic 1200 × 630 crop of the original hero illustration for link previews.
 - App icons are hand-authored SVG drafting marks (house outline + check/tab), exported locally to PNG. Interface icons use inline, hand-authored SVG paths.
 - Decorative paper grid and registration marks are CSS, not downloaded assets.
 
@@ -59,3 +61,9 @@ Sheet/dialog transitions use 180–240ms opacity + translate/scale and originate
 Use case: `stylized-concept`. Asset type: landing/product empty-state hero. Primary request: an exploded axonometric evidence packet for one ordinary home roof repair, connecting a small house roof section, a plain receipt slip, an instant photo of shingles, one simple metal fastener part, and a calendar tab with thin drafting leader lines. Scene: deep navy architectural blueprint sheet. Style: precise cut-paper editorial illustration crossed with technical drafting, tactile cream paper, cyan pencil construction lines, restrained orange pencil marks. Composition: landscape, objects clustered toward the right and center with calm negative space, no UI mockup. Light: soft overhead desk light, modest paper shadows, quiet and trustworthy. Palette: blueprint navy, chalk cream, pale cyan, repair orange, graphite. Avoid: people, hands, brands, logos, legible text, watermarks, gradients, glossy 3D, futuristic devices, legal seals or certificates.
 
 Generated via the factory Azure image endpoint (`/opt/fleet/lib/gen-image.sh`, deployment `factory-image`) on 2026-08-28. Original output is product-specific AI-generated imagery; no third-party copyrighted asset is incorporated. The chosen candidate is reviewed for text artifacts, seams, accidental marks, and palette fit before shipping. Prompt and generation metadata are retained beside the source image in `assets/src/evidence-exploded.json`.
+
+### Sample evidence prompt
+
+Use case: `photorealistic-natural`. Asset type: fictional evidence photo in the demo repair packet. Primary request: a close, ordinary homeowner documentation photo of a small completed asphalt-roof shingle patch around a vent flashing. Scene: overcast daylight on an unbranded suburban roof. Style: honest phone-camera photograph, slightly imperfect framing, clear construction detail. Composition: landscape crop with the repaired shingles centered and enough surrounding roof to show context. Palette: charcoal shingles, muted zinc flashing, cool daylight. Avoid: people, hands, text, logos, watermarks, dramatic damage, unsafe activity, certificates, receipts, addresses, or identifying details. The demo identifies this as sample data.
+
+Generated with the factory `factory-image` deployment on 2026-09-05. The selected output was checked for text, brands, identifying details, unsafe activity, and visual artifacts. Its complete prompt and model metadata are stored in `assets/src/sample-roof-repair.png.json`. The social preview is a centered crop of the existing hero image made without generative changes.

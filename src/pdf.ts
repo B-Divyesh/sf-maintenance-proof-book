@@ -31,7 +31,7 @@ async function attachmentJpeg(attachment: Attachment): Promise<{ data: string; w
 
 export async function exportProofPdf(property: PropertyProfile, records: RepairRecord[]): Promise<void> {
   const { jsPDF } = await import('jspdf');
-  const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: false });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 52;

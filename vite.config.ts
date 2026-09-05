@@ -5,7 +5,7 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: true,
     rollupOptions: {
-      input: ['index.html', 'privacy/index.html', 'terms/index.html']
+      input: ['index.html', 'demo/index.html', 'privacy/index.html', 'terms/index.html']
     }
   },
   test: {

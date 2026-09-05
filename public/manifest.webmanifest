@@ -3,7 +3,7 @@
   "short_name": "Proof Book",
   "description": "A private, offline home repair evidence timeline.",
   "id": "/",
-  "start_url": "/?v=1",
+  "start_url": "/?v=2",
   "scope": "/",
   "display": "standalone",
   "background_color": "#092a43",

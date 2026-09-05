@@ -45,10 +45,11 @@ export function validateBackup(value: unknown): value is ProofBookBackup {
   if (!value || typeof value !== 'object') return false;
   const backup = value as Partial<ProofBookBackup>;
   return backup.format === 'maintenance-proof-book' && backup.version === 1 &&
-    !!backup.property && typeof backup.property.name === 'string' &&
+    !!backup.property && typeof backup.property.name === 'string' && backup.property.name.trim().length > 0 &&
     typeof backup.property.address === 'string' && Array.isArray(backup.records) &&
-    backup.records.every((record) => typeof record?.id === 'string' && typeof record?.title === 'string' &&
+    backup.records.every((record) => typeof record?.id === 'string' && typeof record?.title === 'string' && record.title.trim().length > 0 &&
       [record.area, record.completedDate, record.contractor, record.vendor, record.part, record.notes, record.nextDue, record.nextAction, record.createdAt, record.updatedAt].every((field) => typeof field === 'string') &&
+      record.nextAction.trim().length > 0 &&
       (record.cost === null || typeof record.cost === 'number') &&
       Array.isArray(record.attachments) && record.attachments.every((attachment) =>
         typeof attachment?.id === 'string' && typeof attachment.name === 'string' && typeof attachment.type === 'string' &&

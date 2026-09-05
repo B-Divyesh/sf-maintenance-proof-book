@@ -1,10 +1,14 @@
 import './styles.css';
-import { createBackup, getAllRecords, getSetting, removeRecord, restoreBackup, saveRecord, setSetting } from './db';
+import { clearBook, configureDatabase, createBackup, getAllRecords, getSetting, removeRecord, restoreBackup, saveRecord, setSetting } from './db';
 import type { Attachment, PropertyProfile, RepairRecord } from './types';
 import { dueState, escapeHtml, formatBytes, formatDate, FREE_RECORD_LIMIT, makeCheckoutUrl, MAX_FILE_BYTES, MAX_RECORD_BYTES, PRODUCT_SLUG, sortRecords } from './utils';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 if (!app) throw new Error('App mount is missing.');
+
+const normalizedRoute = location.pathname.replace(/\/$/, '') || '/';
+const demoMode = normalizedRoute === '/demo' || new URL(location.href).searchParams.get('demo') === '1';
+configureDatabase(demoMode);
 
 const defaultProperty: PropertyProfile = { name: 'My home', address: '' };
 let records: RepairRecord[] = [];
@@ -21,6 +25,7 @@ const previewUrls = new Set<string>();
 type LicenseVerdict = { valid: boolean; checkedAt: number; reason?: string };
 const licenseKey = `sb_license:${PRODUCT_SLUG}`;
 const verdictKey = `${licenseKey}:verdict`;
+const BUILD_LABEL = 'v1.1.0';
 
 function icon(name: 'plus' | 'paperclip' | 'calendar' | 'download' | 'edit' | 'trash' | 'check' | 'home' | 'search' | 'lock'): string {
   const paths = {
@@ -38,56 +43,74 @@ function icon(name: 'plus' | 'paperclip' | 'calendar' | 'download' | 'edit' | 't
   return `<svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths[name]}</svg>`;
 }
 
+function headerMarkup(showData = false): string {
+  return `<header class="site-header">
+    <a class="brand" href="/" aria-label="Maintenance Proof Book home"><img src="/icons/icon.svg" alt="" width="40" height="40"><span>Maintenance<br>Proof Book</span></a>
+    <nav class="site-nav" aria-label="Main navigation"><a href="/demo">Demo</a><a href="/#timeline">Repair log</a><a href="/privacy">Privacy</a></nav>
+    ${showData ? `<div class="header-actions"><span id="network-status" class="network-badge" role="status"><span class="status-dot"></span><span>${navigator.onLine ? 'Saved locally' : 'Offline · still working'}</span></span><button class="button button-small button-ghost" type="button" data-action="open-data">Data & backup</button></div>` : ''}
+  </header>`;
+}
+
+function footerMarkup(): string {
+  return `<footer class="site-footer"><p>Keep home repair proof and next service dates together.</p><nav aria-label="Footer navigation"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><p>Built by Param Factory · ${BUILD_LABEL}</p><p>Original generated imagery is disclosed in the design notes.</p></footer>`;
+}
+
+function setRouteMetadata(title: string, description: string, canonicalPath: string): void {
+  document.title = title;
+  const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (canonical) canonical.href = `https://maintenance-proof-book.sociobot.in${canonicalPath}`;
+  document.querySelectorAll<HTMLMetaElement>('meta[name="description"], meta[property="og:description"], meta[name="twitter:description"]').forEach((meta) => { meta.content = description; });
+  document.querySelectorAll<HTMLMetaElement>('meta[property="og:title"], meta[name="twitter:title"]').forEach((meta) => { meta.content = title; });
+  const ogUrl = document.querySelector<HTMLMetaElement>('meta[property="og:url"]');
+  if (ogUrl) ogUrl.content = `https://maintenance-proof-book.sociobot.in${canonicalPath}`;
+}
+
 function renderLegal(kind: 'privacy' | 'terms'): void {
   const privacy = kind === 'privacy';
-  document.title = `${privacy ? 'Privacy' : 'Terms'} — Maintenance Proof Book`;
+  setRouteMetadata(`${privacy ? 'Privacy' : 'Terms'} — Maintenance Proof Book`, privacy ? 'Learn what Maintenance Proof Book stores on your device and when it contacts the billing service.' : 'Read the terms for Maintenance Proof Book records, backups, exports, and the one-time license.', `/${kind}`);
   app.innerHTML = `
-    <header class="site-header"><a class="brand" href="/" aria-label="Maintenance Proof Book home"><img src="/icons/icon.svg" alt="" width="40" height="40"><span>Maintenance<br>Proof Book</span></a></header>
+    ${headerMarkup()}
     <main id="main-content" class="legal-shell paper-sheet">
-      <p class="kicker">Reference sheet / ${privacy ? 'Privacy' : 'Terms'}</p>
-      <h1>${privacy ? 'Your records stay yours.' : 'Plain-language terms.'}</h1>
+      <p class="kicker">${privacy ? 'Privacy' : 'Terms'}</p>
+      <h1>${privacy ? 'Privacy for your repair records' : 'Terms for using this proof book'}</h1>
       ${privacy ? `
-        <p class="lede">Maintenance Proof Book stores property details, repair records, photos and receipts in your browser’s IndexedDB on this device. We do not receive or inspect that data.</p>
-        <h2>What leaves your device</h2><p>Nothing during ordinary use. If you buy or verify a one-time license, your browser sends the license token to Sociobot’s billing API. Checkout is hosted by Sociobot/Dodo, the merchant of record; this app never receives card details.</p>
-        <h2>Backups and exports</h2><p>PDF and JSON exports are created on your device and downloaded where your browser puts files. You decide where to store or share them. JSON backups include attachments and may contain sensitive address or vendor information.</p>
-        <h2>Removal and retention</h2><p>Delete individual records in the app. To erase everything, clear this site’s storage in your browser. Uninstalling the PWA may not clear browser storage. License tokens remain in localStorage until site data is cleared.</p>
+        <p class="lede">Maintenance Proof Book stores property details, repairs, photos, and receipts in IndexedDB on this device.</p>
+        <h2>What leaves your device</h2><p>Ordinary repair work sends no product data away. Buying or checking a license sends only the token to Sociobot’s billing API.</p><p>Sociobot/Dodo hosts checkout as the merchant of record. This app never receives card details.</p>
+        <h2>Backups and exports</h2><p>PDF and JSON exports are created on your device. You choose where to store or share them.</p><p>JSON backups include attachments. They may contain a private address or vendor details.</p>
+        <h2>Removal and retention</h2><p>Delete individual repairs inside the app. Clear this site’s browser storage to erase everything.</p><p>Uninstalling the PWA may not clear browser storage. License tokens remain until you clear this site’s data.</p>
         <h2>Contact</h2><p>For product privacy questions, contact <a href="mailto:privacy@sociobot.in">privacy@sociobot.in</a>.</p>` : `
-        <p class="lede">Use Maintenance Proof Book to keep your own maintenance records. The app is a record-keeping aid, not a warranty, legal certification, inspection, safety service or proof of authenticity.</p>
-        <h2>Your responsibility</h2><p>You are responsible for the accuracy of entries, safe storage of exported files, and following manufacturer and qualified-professional guidance. Do not rely on the app for urgent or safety-critical reminders.</p>
-        <h2>One-time unlock</h2><p>The $24 one-time license unlocks unlimited repair records for this product version. Sociobot/Dodo is the merchant of record and handles payment and refunds. A refunded or revoked license may stop unlocking paid capacity. Your existing local records and exports remain accessible.</p>
-        <h2>Availability and liability</h2><p>The software is provided “as is” without warranties. Browser storage can be cleared or damaged, so keep periodic JSON backups. To the extent allowed by law, the authors are not liable for lost data, missed maintenance or decisions made from a record.</p>
+        <p class="lede">Use Maintenance Proof Book to keep your own home maintenance records.</p><p>It is not a warranty, legal certification, inspection, safety service, or proof of authenticity.</p>
+        <h2>Your responsibility</h2><p>You are responsible for accurate entries, safe exports, and following qualified guidance. Do not use the app for urgent safety reminders.</p>
+        <h2>One-time license</h2><p>The $24 one-time license enables unlimited repair records for this product version.</p><p>Sociobot/Dodo handles payment and refunds as the merchant of record. A refund or revocation can end paid capacity.</p><p>Your existing records and exports remain accessible.</p>
+        <h2>Availability and liability</h2><p>The software is provided “as is” without warranties. Browser storage can be cleared or damaged, so keep JSON backups.</p><p>Where law allows, the authors are not liable for lost data, missed maintenance, or decisions based on a record.</p>
         <h2>Changes</h2><p>Material changes will be dated here. These terms are effective 28 August 2026.</p>`}
       <p><a class="text-link" href="/">← Return to your proof book</a></p>
     </main>
-    <footer class="site-footer"><span>Private by design · Local-first</span><span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></footer>`;
+    ${footerMarkup()}`;
 }
 
 function appMarkup(): string {
   return `
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="Maintenance Proof Book home"><img src="/icons/icon.svg" alt="" width="40" height="40"><span>Maintenance<br>Proof Book</span></a>
-      <div class="header-actions">
-        <span id="network-status" class="network-badge" role="status"><span class="status-dot"></span><span>${navigator.onLine ? 'Saved locally' : 'Offline · still working'}</span></span>
-        <button class="button button-small button-ghost" type="button" data-action="open-data">Data & backup</button>
-      </div>
-    </header>
+    ${headerMarkup(true)}
+    ${demoMode ? `<aside class="demo-banner" aria-label="Demo status"><strong>Demo — sample data, nothing is saved</strong><span>Changes stay in a separate demo book.</span><button type="button" data-action="reset-demo">Reset demo</button><a href="/" data-action="start-real">Start for real</a></aside>` : ''}
     <main id="main-content">
-      <section class="hero blueprint-section" aria-labelledby="page-title">
+      ${demoMode ? `<section class="demo-intro" aria-labelledby="page-title"><p class="kicker kicker-light">Sample repair book</p><h1 id="page-title">Review completed home repair records</h1><p>Open a packet, edit a repair, export it, or reset the sample.</p></section>` : `<section class="hero blueprint-section" aria-labelledby="page-title">
         <div class="hero-copy">
-          <p class="kicker kicker-light">Property record / Local & private</p>
-          <h1 id="page-title">Every repair.<br><em>Proof attached.</em></h1>
-          <p class="hero-lede">Keep the work, who did it, what part they used, the receipt, the photo, and what happens next—on one durable timeline that works offline.</p>
+          <p class="kicker kicker-light">Home repair records</p>
+          <h1 id="page-title">Keep proof of every home repair</h1>
+          <p class="hero-lede">For homeowners who need each repair, contractor, part, receipt, photo, and next service date in one record.</p>
           <div class="hero-actions">
-            <button class="button button-primary" type="button" data-action="new-record">${icon('plus')} Record a repair</button>
-            <button class="button button-quiet" type="button" data-action="scroll-timeline">View timeline ↓</button>
+            <a class="button button-primary" href="/demo">Try it with sample data</a>
+            <button class="button button-quiet" type="button" data-action="new-record">${icon('plus')} Record a repair</button>
           </div>
-          <p class="privacy-note">${icon('lock')} Stored only in this browser. No account. No tracking.</p>
+          <p class="action-note">The sample opens three repairs in a separate demo book.</p>
+          <ul class="hero-facts"><li>Works offline after your first visit.</li><li>No account or tracking.</li><li>Five repairs free. Unlimited records cost $24 once.</li></ul>
         </div>
         <figure class="hero-art">
           <picture><source srcset="/assets/evidence-exploded.webp" type="image/webp"><img src="/assets/evidence-exploded.jpg" width="1200" height="800" alt="Exploded blueprint illustration connecting a roof repair to its receipt, photo, fastener and service calendar" fetchpriority="high" decoding="async"></picture>
-          <figcaption><span>Fig. 01</span> One repair becomes one evidence packet.</figcaption>
+          <figcaption><span>Repair packet</span> Work, evidence, and the next date stay together.</figcaption>
         </figure>
-      </section>
+      </section>`}
 
       <section id="timeline" class="workspace" aria-labelledby="timeline-title">
         <div class="property-strip">
@@ -100,7 +123,7 @@ function appMarkup(): string {
           <div><span class="summary-number" id="due-count">0</span><span>due or upcoming</span></div>
         </div>
         <div class="timeline-heading">
-          <div><p class="kicker kicker-light">Sheet 02 / History</p><h2 id="timeline-title">Property timeline</h2></div>
+          <div><p class="kicker kicker-light">Repair history</p><h2 id="timeline-title">Property timeline</h2></div>
           <button class="button button-primary" type="button" data-action="new-record">${icon('plus')} Record a repair</button>
         </div>
         <div class="toolbar" aria-label="Filter repair records">
@@ -110,8 +133,18 @@ function appMarkup(): string {
         <div id="timeline-content" aria-live="polite"></div>
       </section>
 
+      <section class="how-section paper-section" aria-labelledby="how-title">
+        <p class="kicker">How it works</p><h2 id="how-title">Build one record for each repair</h2>
+        <ol class="how-list"><li><strong>Record the work</strong><span>Add the date, contractor, part, cost, and notes.</span></li><li><strong>Attach the evidence</strong><span>Add photos or PDF receipts while they are easy to find.</span></li><li><strong>Set the next action</strong><span>Choose what to check and when it is due.</span></li></ol>
+      </section>
+
+      <section class="limits-section" aria-labelledby="limits-title">
+        <div><p class="kicker kicker-light">Privacy and limits</p><h2 id="limits-title">What this proof book does not do</h2></div>
+        <ul><li>It does not upload repair records or attachments.</li><li>It does not replace an inspection, warranty, or safety reminder.</li><li>It does not certify that a receipt or photo is authentic.</li><li>Browser storage can be cleared, so keep JSON backups.</li></ul>
+      </section>
+
       <section class="unlock-section" id="unlock" aria-labelledby="unlock-title">
-        <div><p class="kicker kicker-light">Keep it for the life of the house</p><h2 id="unlock-title">A record book, not a subscription.</h2><p>The free book holds 5 complete repairs. A $24 one-time license unlocks unlimited repair records on your devices. PDF and JSON exports are always free.</p></div>
+        <div><p class="kicker kicker-light">Price</p><h2 id="unlock-title">Add unlimited repair records</h2><p>The free book holds five repairs. A $24 one-time license enables unlimited records. PDF and JSON exports remain free.</p></div>
         <div class="unlock-card">
           <p class="price"><span>$24</span> one time</p>
           <ul><li>${icon('check')} Unlimited repair records</li><li>${icon('check')} Restore the license on another device</li><li>${icon('check')} Existing records always remain readable</li></ul>
@@ -121,7 +154,7 @@ function appMarkup(): string {
         </div>
       </section>
     </main>
-    <footer class="site-footer"><span>Generated illustration · Original to this product</span><span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></footer>
+    ${footerMarkup()}
 
     <dialog id="record-dialog" class="sheet-dialog" aria-labelledby="record-dialog-title">
       <form id="record-form" method="dialog" novalidate>
@@ -145,7 +178,7 @@ function appMarkup(): string {
     </dialog>
 
     <dialog id="view-dialog" class="sheet-dialog view-dialog" aria-labelledby="view-dialog-title"><div id="view-content"></div></dialog>
-    <dialog id="property-dialog" class="sheet-dialog small-dialog" aria-labelledby="property-dialog-title"><form id="property-form" method="dialog"><div class="dialog-head"><div><p class="kicker">Property cover</p><h2 id="property-dialog-title">Name this property</h2></div><button class="icon-button" type="button" data-action="close-property" aria-label="Close property form">×</button></div><label class="field"><span>Property name</span><input name="name" required maxlength="80" autocomplete="off"></label><label class="field"><span>Address</span><textarea name="address" rows="3" maxlength="240" autocomplete="street-address"></textarea><small>Optional. Stored only on this device and included in your exports.</small></label><div class="dialog-actions"><button class="button button-quiet" type="button" data-action="close-property">Cancel</button><button class="button button-primary" type="submit">Save property</button></div></form></dialog>
+    <dialog id="property-dialog" class="sheet-dialog small-dialog" aria-labelledby="property-dialog-title"><form id="property-form" method="dialog" novalidate><div class="dialog-head"><div><p class="kicker">Property details</p><h2 id="property-dialog-title">Name this property</h2></div><button class="icon-button" type="button" data-action="close-property" aria-label="Close property form">×</button></div><label class="field"><span>Property name</span><input name="name" required maxlength="80" autocomplete="off" aria-describedby="property-error"></label><label class="field"><span>Address</span><textarea name="address" rows="3" maxlength="240" autocomplete="street-address"></textarea><small>Optional. Stored only on this device and included in your exports.</small></label><p id="property-error" class="form-error" role="alert"></p><div class="dialog-actions"><button class="button button-quiet" type="button" data-action="close-property">Cancel</button><button class="button button-primary" type="submit">Save property</button></div></form></dialog>
     <dialog id="data-dialog" class="sheet-dialog small-dialog" aria-labelledby="data-dialog-title"><div class="dialog-head"><div><p class="kicker">Data ownership</p><h2 id="data-dialog-title">Back up your proof book</h2></div><button class="icon-button" type="button" data-action="close-data" aria-label="Close data and backup">×</button></div><p>Your browser can clear local storage. Keep a JSON backup somewhere safe; it includes every attachment and can be restored here.</p><div class="data-actions"><button class="button button-paper" type="button" data-action="export-pdf">${icon('download')} Export evidence PDF</button><button class="button button-paper" type="button" data-action="export-json">${icon('download')} Download JSON backup</button><label class="button button-quiet import-button">Restore JSON backup<input id="import-input" type="file" accept="application/json,.json"></label></div><p id="storage-meter" class="storage-note">Checking browser storage…</p><p class="fine-print">Import replaces the current local proof book after confirmation. A PDF is a readable homeowner record, not a legal certification.</p></dialog>
     <dialog id="license-dialog" class="sheet-dialog small-dialog" aria-labelledby="license-dialog-title"><form id="license-form" method="dialog"><div class="dialog-head"><div><p class="kicker">One-time unlock</p><h2 id="license-dialog-title">Restore a license</h2></div><button class="icon-button" type="button" data-action="close-license" aria-label="Close license form">×</button></div><label class="field"><span>License token</span><input name="license" required autocomplete="off" spellcheck="false" placeholder="Paste your token"></label><p class="fine-print">The token is saved on this device and sent only to Sociobot for verification.</p><div id="license-error" class="form-error" role="alert"></div><div class="dialog-actions"><button class="button button-quiet" type="button" data-action="close-license">Cancel</button><button class="button button-primary" type="submit">Verify and restore</button></div></form></dialog>
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>`;
@@ -154,8 +187,8 @@ function appMarkup(): string {
 function getDialog(id: string): HTMLDialogElement { return document.querySelector<HTMLDialogElement>(`#${id}`)!; }
 
 function unlockMarkup(): string {
-  if (unlocked) return `<div class="unlocked-note">${icon('check')}<div><p class="kicker kicker-light">Lifetime book unlocked</p><h2 id="unlock-title">Unlimited records are ready.</h2><p>Your license is stored on this device. Core records and exports stay accessible even if verification is temporarily offline.</p></div></div>`;
-  return `<div><p class="kicker kicker-light">Keep it for the life of the house</p><h2 id="unlock-title">A record book, not a subscription.</h2><p>The free book holds 5 complete repairs. A $24 one-time license unlocks unlimited repair records on your devices. PDF and JSON exports are always free.</p></div>
+  if (unlocked) return `<div class="unlocked-note">${icon('check')}<div><p class="kicker kicker-light">License active</p><h2 id="unlock-title">Unlimited records are ready</h2><p>Your license is stored on this device. Your records and exports stay available.</p></div></div>`;
+  return `<div><p class="kicker kicker-light">Price</p><h2 id="unlock-title">Add unlimited repair records</h2><p>The free book holds five repairs. A $24 one-time license enables unlimited records. PDF and JSON exports remain free.</p></div>
     <div class="unlock-card"><p class="price"><span>$24</span> one time</p><ul><li>${icon('check')} Unlimited repair records</li><li>${icon('check')} Restore the license on another device</li><li>${icon('check')} Existing records always remain readable</li></ul><a class="button button-primary button-full" id="buy-link" href="${makeCheckoutUrl()}">Buy the one-time unlock</a><button class="button button-quiet button-full" type="button" data-action="restore-license">Have a license? Restore it</button><p class="fine-print">Checkout and refunds are handled by Sociobot/Dodo, merchant of record. <a href="/terms">Terms</a></p></div>`;
 }
 
@@ -176,6 +209,78 @@ function showToast(message: string, action?: { label: string; run: () => void },
   }
   region.replaceChildren(toast);
   if (!persistent) window.setTimeout(() => toast.remove(), action ? 10_000 : 4_000);
+}
+
+function dateFromToday(offset: number): string {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + offset);
+  return date.toISOString().slice(0, 10);
+}
+
+function samplePdf(title: string, lines: string[]): Blob {
+  const escapePdf = (value: string) => value.replaceAll('\\', '\\\\').replaceAll('(', '\\(').replaceAll(')', '\\)');
+  const stream = ['BT', '/F1 11 Tf', '72 770 Td', '(Maintenance Proof Book sample) Tj', '0 -30 Td', '/F1 18 Tf', `(${escapePdf(title)}) Tj`, '/F1 11 Tf', ...lines.flatMap((line) => ['0 -26 Td', `(${escapePdf(line)}) Tj`]), 'ET'].join('\n');
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Length ${new TextEncoder().encode(stream).length} >>\nstream\n${stream}\nendstream`
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(new TextEncoder().encode(pdf).length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = new TextEncoder().encode(pdf).length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  return new Blob([pdf], { type: 'application/pdf' });
+}
+
+async function seedDemo(): Promise<void> {
+  const alreadySeeded = await getSetting('demoSeeded', false);
+  if (alreadySeeded) return;
+  await clearBook();
+  const photoResponse = await fetch('/assets/sample-roof-repair.webp');
+  const roofPhoto = photoResponse.ok ? await photoResponse.blob() : new Blob(['Sample roof repair image unavailable.'], { type: 'image/webp' });
+  const createdAt = new Date().toISOString();
+  const sampleRecords: RepairRecord[] = [
+    {
+      id: 'sample-roof-vent', title: 'Repaired roof vent flashing', area: 'North roof', completedDate: dateFromToday(-48), contractor: 'Clearline Roofing', vendor: 'Town Builders Supply', part: 'Galvanized vent flashing, 4 inch', cost: 1280, notes: 'Replaced cracked flashing and the surrounding shingles. Contractor included a five-year workmanship warranty.', nextDue: dateFromToday(60), nextAction: 'Check the patch after the first heavy storm',
+      attachments: [
+        { id: 'sample-roof-photo', name: 'roof-vent-after-repair.webp', type: 'image/webp', size: roofPhoto.size, addedAt: createdAt, blob: roofPhoto },
+        { id: 'sample-roof-receipt', name: 'clearline-roofing-receipt.pdf', type: 'application/pdf', size: 0, addedAt: createdAt, blob: samplePdf('Roof vent repair receipt', ['Labor and materials: $1,280.00', 'Paid in full']) }
+      ], createdAt, updatedAt: createdAt
+    },
+    {
+      id: 'sample-heat-pump', title: 'Serviced heat pump', area: 'Utility room', completedDate: dateFromToday(-132), contractor: 'North County Heating', vendor: 'North County Heating', part: 'Air filter, 20 × 25 × 1', cost: 189, notes: 'Cleaned the outdoor coil, checked refrigerant pressure, and replaced the return filter.', nextDue: dateFromToday(30), nextAction: 'Replace the filter and book the annual service',
+      attachments: [{ id: 'sample-hvac-report', name: 'heat-pump-service-report.pdf', type: 'application/pdf', size: 0, addedAt: createdAt, blob: samplePdf('Heat pump service report', ['Coil cleaned', 'Filter replaced', 'Refrigerant pressure checked']) }], createdAt, updatedAt: createdAt
+    },
+    {
+      id: 'sample-kitchen-tap', title: 'Replaced kitchen tap cartridge', area: 'Kitchen', completedDate: dateFromToday(-286), contractor: 'Harbor Plumbing', vendor: 'Central Plumbing Counter', part: 'Ceramic cartridge C-22', cost: 214.5, notes: 'Replaced the hot-side cartridge and tested the shutoff valves. No leak was visible after testing.', nextDue: dateFromToday(180), nextAction: 'Inspect the cabinet for drips',
+      attachments: [{ id: 'sample-tap-receipt', name: 'harbor-plumbing-invoice.pdf', type: 'application/pdf', size: 0, addedAt: createdAt, blob: samplePdf('Kitchen tap repair invoice', ['Labor: $160.00', 'Cartridge: $54.50', 'Total: $214.50']) }], createdAt, updatedAt: createdAt
+    }
+  ];
+  sampleRecords.forEach((record) => record.attachments.forEach((attachment) => { attachment.size = attachment.blob.size; }));
+  await Promise.all(sampleRecords.map(saveRecord));
+  await setSetting('property', { name: '24 Willow Lane', address: 'Sample property' });
+  await setSetting('demoSeeded', true);
+}
+
+async function resetDemo(): Promise<void> {
+  await clearBook();
+  await seedDemo();
+  [records, property] = await Promise.all([getAllRecords(), getSetting('property', defaultProperty)]);
+  searchTerm = '';
+  dueFilter = 'all';
+  const search = document.querySelector<HTMLInputElement>('#search');
+  const filter = document.querySelector<HTMLSelectElement>('#due-filter');
+  if (search) search.value = '';
+  if (filter) filter.value = 'all';
+  renderTimeline();
+  showToast('Demo reset to the original three sample repairs.');
 }
 
 function visibleRecords(): RepairRecord[] {
@@ -400,9 +505,16 @@ async function exportPdf(): Promise<void> {
 async function importJson(input: HTMLInputElement): Promise<void> {
   const file = input.files?.[0]; input.value = '';
   if (!file) return;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await file.text());
+  } catch {
+    showToast('This file is not valid JSON. Choose a Maintenance Proof Book JSON backup and try again.', undefined, true);
+    return;
+  }
   if (!window.confirm('Restore this backup? It will replace every repair currently stored on this device. Download a backup first if you need the current records.')) return;
   try {
-    const restored = await restoreBackup(JSON.parse(await file.text()));
+    const restored = await restoreBackup(parsed);
     property = restored.property; records = restored.records;
     renderTimeline(); getDialog('data-dialog').close();
     showToast(`Restored ${records.length} repair record${records.length === 1 ? '' : 's'}.`);
@@ -496,6 +608,8 @@ function bindEvents(): void {
     if (action === 'close-license') getDialog('license-dialog').close();
     if (action === 'scroll-timeline') document.querySelector('#timeline')?.scrollIntoView({ behavior: 'smooth' });
     if (action === 'clear-filters') { searchTerm = ''; dueFilter = 'all'; (document.querySelector('#search') as HTMLInputElement).value = ''; (document.querySelector('#due-filter') as HTMLSelectElement).value = 'all'; renderTimeline(); }
+    if (action === 'reset-demo' && demoMode) void resetDemo();
+    if (action === 'start-real' && demoMode) { event.preventDefault(); void clearBook().then(() => { location.href = '/'; }); }
   });
   document.querySelector('#record-form')?.addEventListener('submit', (event) => void handleRecordSubmit(event as SubmitEvent));
   ['title', 'nextAction'].forEach((name) => formElement<HTMLInputElement>(document.querySelector<HTMLFormElement>('#record-form')!, name).addEventListener('input', (event) => {
@@ -505,8 +619,24 @@ function bindEvents(): void {
   document.querySelector<HTMLInputElement>('#attachment-input')?.addEventListener('change', (event) => void addAttachments(event.currentTarget as HTMLInputElement));
   document.querySelector('#property-form')?.addEventListener('submit', async (event) => {
     event.preventDefault(); const form = event.currentTarget as HTMLFormElement;
-    property = { name: formElement(form, 'name').value.trim(), address: formElement(form, 'address').value.trim() };
-    await setSetting('property', property); getDialog('property-dialog').close(); renderTimeline(); showToast('Property details saved locally.');
+    const name = formElement<HTMLInputElement>(form, 'name');
+    const error = document.querySelector<HTMLParagraphElement>('#property-error')!;
+    name.setCustomValidity(''); name.removeAttribute('aria-invalid'); error.textContent = '';
+    if (!name.value.trim()) {
+      const message = 'Enter a property name that contains more than spaces.';
+      name.setCustomValidity(message); name.setAttribute('aria-invalid', 'true'); error.textContent = message; name.focus(); name.reportValidity(); return;
+    }
+    const nextProperty = { name: name.value.trim(), address: formElement(form, 'address').value.trim() };
+    try {
+      await setSetting('property', nextProperty);
+      property = nextProperty; getDialog('property-dialog').close(); renderTimeline(); showToast('Property details saved locally.');
+    } catch {
+      error.textContent = 'The property could not be saved. Check browser storage and try again.';
+    }
+  });
+  formElement<HTMLInputElement>(document.querySelector<HTMLFormElement>('#property-form')!, 'name').addEventListener('input', (event) => {
+    const field = event.currentTarget as HTMLInputElement;
+    if (field.value.trim()) { field.setCustomValidity(''); field.removeAttribute('aria-invalid'); document.querySelector('#property-error')!.textContent = ''; }
   });
   document.querySelector('#license-form')?.addEventListener('submit', (event) => { event.preventDefault(); void restoreLicense(event.currentTarget as HTMLFormElement); });
   document.querySelector<HTMLInputElement>('#import-input')?.addEventListener('change', (event) => void importJson(event.currentTarget as HTMLInputElement));
@@ -540,17 +670,24 @@ async function registerServiceWorker(): Promise<void> {
   } catch { showToast('Offline installation is unavailable, but local records still work.', undefined, true); }
 }
 
+function renderNotFound(): void {
+  setRouteMetadata('Page not found — Maintenance Proof Book', 'This Maintenance Proof Book page does not exist. Return to the home repair record.', location.pathname);
+  app.innerHTML = `${headerMarkup()}<main id="main-content" class="not-found-shell"><p class="kicker kicker-light">404 · Page not found</p><h1>This repair page does not exist</h1><p>Check the address or return to your repair records.</p><a class="button button-primary" href="/">Return to the proof book</a></main>${footerMarkup()}`;
+}
+
 async function init(): Promise<void> {
-  const route = location.pathname.replace(/\/$/, '');
+  const route = normalizedRoute === '/' ? '' : normalizedRoute;
   if (route === '/privacy' || route === '/terms') { renderLegal(route.slice(1) as 'privacy' | 'terms'); void registerServiceWorker(); return; }
-  document.title = 'Maintenance Proof Book — your home repair evidence, together';
+  if (route && route !== '/demo') { renderNotFound(); void registerServiceWorker(); return; }
+  setRouteMetadata(demoMode ? 'Demo — Maintenance Proof Book' : 'Maintenance Proof Book — Record home repairs', demoMode ? 'Try three sample home repairs in a separate demo book. Reset it anytime without changing your own repair records.' : 'Keep home repairs, contractors, parts, receipts, photos, and next service dates together on your device.', demoMode ? '/demo' : '/');
   app.innerHTML = appMarkup();
   bindEvents();
   updateNetworkStatus();
   try {
+    if (demoMode) await seedDemo();
     [records, property] = await Promise.all([getAllRecords(), getSetting('property', defaultProperty)]);
   } catch (cause) { console.error(cause); storageFailed = true; }
-  await initializeLicense();
+  if (!demoMode) await initializeLicense();
   renderTimeline();
   const url = new URL(location.href);
   if (url.searchParams.get('action') === 'new') { url.searchParams.delete('action'); history.replaceState({}, '', `${url.pathname}${url.search}`); openRecordForm(); }
